@@ -1,0 +1,10 @@
+{
+  "name": "text-rpg",
+  "version": "1.0.0",
+  "description": "Простенькая текстовая RPG на JavaScript (Node.js, консоль)",
+  "main": "game.js",
+  "scripts": {
+    "start": "node game.js"
+  },
+  "license": "MIT"
+}

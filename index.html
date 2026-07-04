@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Земли Тихого Лога — текстовая RPG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #e8dcc3;
+    --parchment-dark: #ddcda9;
+    --ink: #2b2118;
+    --ink-soft: #4a3d2e;
+    --forest: #3f5c3d;
+    --forest-dark: #2c4129;
+    --ember: #b5541f;
+    --ember-dark: #8f4118;
+    --blood: #7a2020;
+    --border-brown: #6b5233;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: var(--ink);
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.02), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(255,255,255,0.02), transparent 40%);
+    font-family: 'EB Garamond', serif;
+    color: var(--ink);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  .scroll {
+    width: 100%;
+    max-width: 720px;
+    background: var(--parchment);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(107,82,51,0.04) 0px, transparent 2px, transparent 4px),
+      radial-gradient(ellipse at top left, rgba(255,255,255,0.25), transparent 60%);
+    border: 1px solid var(--border-brown);
+    box-shadow:
+      0 0 0 6px var(--parchment-dark),
+      0 0 0 7px var(--border-brown),
+      0 20px 60px rgba(0,0,0,0.55);
+    position: relative;
+  }
+
+  .scroll::before, .scroll::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    height: 14px;
+    background: repeating-linear-gradient(90deg, var(--border-brown) 0 10px, var(--parchment-dark) 10px 20px);
+  }
+  .scroll::before { top: -14px; }
+  .scroll::after { bottom: -14px; }
+
+  .inner {
+    padding: 40px 36px 44px;
+  }
+
+  h1.title {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 1.6rem;
+    letter-spacing: 0.04em;
+    color: var(--forest-dark);
+    text-align: center;
+    margin: 0 0 4px;
+    text-transform: uppercase;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-style: italic;
+    color: var(--ink-soft);
+    margin: 0 0 24px;
+    font-size: 0.95rem;
+  }
+
+  .divider {
+    border: none;
+    border-top: 2px solid var(--border-brown);
+    opacity: 0.35;
+    margin: 20px 0;
+  }
+
+  .location-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--ember-dark);
+    margin: 0 0 8px;
+  }
+
+  .location-desc {
+    font-size: 1.05rem;
+    line-height: 1.55;
+    margin: 0 0 4px;
+  }
+
+  .log {
+    background: rgba(255,255,255,0.25);
+    border: 1px dashed var(--border-brown);
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    min-height: 1.4em;
+    line-height: 1.5;
+  }
+
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat {
+    background: rgba(255,255,255,0.3);
+    border: 1px solid var(--border-brown);
+    padding: 8px 6px;
+    text-align: center;
+  }
+
+  .stat .label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 3px;
+  }
+
+  .stat .value {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--ink);
+  }
+
+  .hp-bar-track {
+    width: 100%;
+    height: 10px;
+    background: rgba(0,0,0,0.15);
+    border: 1px solid var(--border-brown);
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .hp-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blood), var(--ember));
+    transition: width 0.3s ease;
+  }
+  .hp-bar-fill.enemy {
+    background: linear-gradient(90deg, #4a4a4a, #7a2020);
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  button.choice {
+    font-family: 'EB Garamond', serif;
+    font-size: 1.05rem;
+    text-align: left;
+    background: var(--parchment-dark);
+    border: 1px solid var(--border-brown);
+    color: var(--ink);
+    padding: 12px 18px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  }
+
+  button.choice::before {
+    content: "❧";
+    color: var(--forest);
+    margin-right: 10px;
+  }
+
+  button.choice:hover {
+    background: var(--forest);
+    color: var(--parchment);
+    transform: translateX(3px);
+  }
+  button.choice:hover::before {
+    color: var(--parchment);
+  }
+
+  button.choice:active {
+    transform: translateX(1px) scale(0.99);
+  }
+
+  button.choice:focus-visible {
+    outline: 3px solid var(--ember);
+    outline-offset: 2px;
+  }
+
+  button.choice.danger:hover {
+    background: var(--blood);
+  }
+
+  .battle-box {
+    background: rgba(0,0,0,0.06);
+    border: 1px solid var(--border-brown);
+    padding: 16px;
+    margin-bottom: 18px;
+  }
+
+  .combatant {
+    margin-bottom: 12px;
+  }
+  .combatant:last-child { margin-bottom: 0; }
+  .combatant .name-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    margin-bottom: 3px;
+  }
+
+  .game-over-screen {
+    text-align: center;
+  }
+  .game-over-screen h2 {
+    font-family: 'Cinzel', serif;
+    color: var(--blood);
+    letter-spacing: 0.05em;
+  }
+
+  .name-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .name-form input {
+    font-family: 'EB Garamond', serif;
+    font-size: 1.1rem;
+    padding: 10px 14px;
+    width: 100%;
+    max-width: 320px;
+    border: 1px solid var(--border-brown);
+    background: rgba(255,255,255,0.4);
+    color: var(--ink);
+    text-align: center;
+  }
+  .name-form input:focus-visible {
+    outline: 3px solid var(--ember);
+  }
+
+  .seal-btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    background: var(--ember);
+    color: var(--parchment);
+    border: none;
+    padding: 12px 28px;
+    cursor: pointer;
+    border-radius: 50% / 20%;
+    box-shadow: 0 3px 0 var(--ember-dark);
+    transition: transform 0.1s ease;
+  }
+  .seal-btn:hover { background: var(--ember-dark); }
+  .seal-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ember-dark); }
+
+  .inventory-list {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+  }
+
+  @media (max-width: 480px) {
+    .inner { padding: 28px 18px 32px; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scroll">
+  <div class="inner" id="app"></div>
+</div>
+
+<script>
+(function () {
+  const ITEMS = {
+    potion: { key: 'potion', name: 'Зелье лечения', heal: 15, price: 8 },
+    sword:  { key: 'sword',  name: 'Стальной меч', attackBonus: 4, price: 25 },
+    shield: { key: 'shield', name: 'Деревянный щит', defenseBonus: 3, price: 20 },
+  };
+
+  const MONSTER_TEMPLATES = {
+    forest: { name: 'Дикий волк', hp: 18, attack: 4, defense: 1, expReward: 10, goldReward: 5 },
+    cave:   { name: 'Пещерный гоблин', hp: 28, attack: 6, defense: 2, expReward: 18, goldReward: 12 },
+    ruins:  { name: 'Древний страж', hp: 45, attack: 9, defense: 4, expReward: 35, goldReward: 25 },
+  };
+
+  const LOCATIONS = {
+    village: {
+      title: 'Деревня Тихий Лог',
+      desc: 'Ты стоишь на площади маленькой деревни. Тут есть лавка торговца и таверна для отдыха.',
+    },
+    forest: {
+      title: 'Тёмный лес',
+      desc: 'Деревья закрывают солнце. Слышен вой волков где-то неподалёку.',
+    },
+    cave: {
+      title: 'Мрачная пещера',
+      desc: 'Сырые стены, капает вода. Где-то впереди слышно рычание.',
+    },
+    ruins: {
+      title: 'Древние руины',
+      desc: 'Полуразрушенные колонны хранят древнюю магию. Здесь опасно.',
+    },
+  };
+
+  let state = null; // player state
+  let screen = 'name'; // name | town | shop | battle | gameover
+  let monster = null;
+  let battleReturnLocation = 'village';
+  let log = '';
+
+  function newPlayer(name) {
+    return {
+      name: name || 'Герой',
+      level: 1,
+      hp: 30,
+      maxHp: 30,
+      attack: 5,
+      defense: 2,
+      exp: 0,
+      expToNext: 20,
+      gold: 10,
+      inventory: [],
+      location: 'village',
+    };
+  }
+
+  function totalAttack(p) {
+    return p.attack + p.inventory.reduce((s, i) => s + (i.attackBonus || 0), 0);
+  }
+  function totalDefense(p) {
+    return p.defense + p.inventory.reduce((s, i) => s + (i.defenseBonus || 0), 0);
+  }
+  function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function setLog(text) {
+    log = text;
+  }
+
+  function goTo(loc) {
+    state.location = loc;
+    screen = 'town';
+    setLog('');
+    render();
+  }
+
+  function rest() {
+    if (state.gold < 5) {
+      setLog('У тебя недостаточно золота, чтобы отдохнуть в таверне.');
+    } else {
+      state.gold -= 5;
+      state.hp = state.maxHp;
+      setLog('Ты отдохнул и полностью восстановил здоровье. (−5 золота)');
+    }
+    render();
+  }
+
+  function buyItem(key) {
+    const item = ITEMS[key];
+    if (state.gold < item.price) {
+      setLog('Недостаточно золота!');
+    } else {
+      state.gold -= item.price;
+      state.inventory.push({ ...item });
+      setLog(`Ты купил: ${item.name}`);
+    }
+    render();
+  }
+
+  function startEncounter(locKey) {
+    const t = MONSTER_TEMPLATES[locKey];
+    monster = { ...t, maxHp: t.hp };
+    battleReturnLocation = locKey;
+    screen = 'battle';
+    setLog(`На тебя напал(а) ${monster.name}!`);
+    render();
+  }
+
+  function playerAttack() {
+    const dmgToMonster = Math.max(1, totalAttack(state) - monster.defense + rand(-1, 2));
+    monster.hp -= dmgToMonster;
+    let text = `Ты наносишь ${dmgToMonster} урона.`;
+
+    if (monster.hp <= 0) {
+      winBattle(text);
+      return;
+    }
+
+    const dmgToPlayer = Math.max(1, monster.attack - totalDefense(state) + rand(-1, 2));
+    state.hp -= dmgToPlayer;
+    text += ` ${monster.name} наносит тебе ${dmgToPlayer} урона.`;
+
+    if (state.hp <= 0) {
+      setLog(text);
+      screen = 'gameover';
+      render();
+      return;
+    }
+
+    setLog(text);
+    render();
+  }
+
+  function usePotionInBattle() {
+    const idx = state.inventory.findIndex((i) => i.key === 'potion');
+    if (idx === -1) {
+      setLog('У тебя нет зелий лечения!');
+      render();
+      return;
+    }
+    state.inventory.splice(idx, 1);
+    state.hp = Math.min(state.maxHp, state.hp + ITEMS.potion.heal);
+    let text = `Ты выпил зелье. HP: ${state.hp}/${state.maxHp}.`;
+
+    const dmgToPlayer = Math.max(1, monster.attack - totalDefense(state) + rand(-1, 2));
+    state.hp -= dmgToPlayer;
+    text += ` ${monster.name} наносит тебе ${dmgToPlayer} урона.`;
+
+    if (state.hp <= 0) {
+      setLog(text);
+      screen = 'gameover';
+      render();
+      return;
+    }
+    setLog(text);
+    render();
+  }
+
+  function tryFlee() {
+    if (Math.random() > 0.4) {
+      setLog('Тебе удалось сбежать!');
+      goTo('village');
+    } else {
+      const dmgToPlayer = Math.max(1, monster.attack - totalDefense(state));
+      state.hp -= dmgToPlayer;
+      let text = `Побег не удался! ${monster.name} наносит тебе ${dmgToPlayer} урона.`;
+      if (state.hp <= 0) {
+        setLog(text);
+        screen = 'gameover';
+        render();
+        return;
+      }
+      setLog(text);
+      render();
+    }
+  }
+
+  function winBattle(prefix) {
+    let text = `${prefix} Ты победил ${monster.name}! `;
+    state.exp += monster.expReward;
+    state.gold += monster.goldReward;
+    text += `Получено опыта: ${monster.expReward}, золота: ${monster.goldReward}.`;
+
+    let leveled = false;
+    while (state.exp >= state.expToNext) {
+      state.exp -= state.expToNext;
+      state.level += 1;
+      state.expToNext = Math.round(state.expToNext * 1.5);
+      state.maxHp += 10;
+      state.hp = state.maxHp;
+      state.attack += 2;
+      state.defense += 1;
+      leveled = true;
+    }
+    if (leveled) {
+      text += ` >>> Уровень повышен! Теперь ты ${state.level} уровня. <<<`;
+    }
+
+    setLog(text);
+    state.location = battleReturnLocation;
+    screen = 'town';
+    render();
+  }
+
+  function restart() {
+    screen = 'name';
+    state = null;
+    monster = null;
+    log = '';
+    render();
+  }
+
+  // ---------- Rendering ----------
+
+  function el(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html.trim();
+    return div.firstChild;
+  }
+
+  function renderNameScreen() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <h1 class="title">Земли Тихого Лога</h1>
+      <p class="subtitle">простенькая текстовая RPG</p>
+      <hr class="divider">
+      <p class="location-desc" style="text-align:center;">Как зовут твоего героя?</p>
+      <div class="name-form">
+        <input id="nameInput" type="text" placeholder="Имя героя" maxlength="20" autofocus />
+        <button class="seal-btn" id="startBtn">Начать приключение</button>
+      </div>
+    `;
+    const input = document.getElementById('nameInput');
+    const btn = document.getElementById('startBtn');
+    function begin() {
+      const name = input.value.trim();
+      state = newPlayer(name);
+      screen = 'town';
+      setLog(`Добро пожаловать, ${state.name}! Твоё приключение начинается...`);
+      render();
+    }
+    btn.addEventListener('click', begin);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') begin(); });
+  }
+
+  function statsBarHtml(p) {
+    return `
+      <div class="stats-bar">
+        <div class="stat"><span class="label">Уровень</span><span class="value">${p.level}</span></div>
+        <div class="stat"><span class="label">Золото</span><span class="value">${p.gold}</span></div>
+        <div class="stat"><span class="label">Атака</span><span class="value">${totalAttack(p)}</span></div>
+        <div class="stat"><span class="label">Защита</span><span class="value">${totalDefense(p)}</span></div>
+      </div>
+      <div class="combatant">
+        <div class="name-row"><span>${p.name}</span><span>${p.hp}/${p.maxHp} HP</span></div>
+        <div class="hp-bar-track"><div class="hp-bar-fill" style="width:${Math.max(0, p.hp / p.maxHp * 100)}%"></div></div>
+      </div>
+    `;
+  }
+
+  function renderTown() {
+    const app = document.getElementById('app');
+    const loc = LOCATIONS[state.location];
+    const invText = state.inventory.length
+      ? state.inventory.map(i => i.name).join(', ')
+      : 'пусто';
+
+    let optionsHtml = '';
+    let handlers = [];
+
+    function addOption(label, handler, extraClass) {
+      const idx = handlers.length;
+      handlers.push(handler);
+      optionsHtml += `<button class="choice ${extraClass || ''}" data-idx="${idx}">${label}</button>`;
+    }
+
+    if (state.location === 'village') {
+      addOption('Идти в лес', () => startEncounter('forest'));
+      addOption('Идти к пещере', () => startEncounter('cave'));
+      addOption('Идти к древним руинам', () => startEncounter('ruins'));
+      addOption('Зайти в лавку торговца', () => { screen = 'shop'; setLog(''); render(); });
+      addOption('Отдохнуть в таверне (5 золота)', rest);
+    } else {
+      addOption(`Идти дальше (возможна встреча с врагом)`, () => startEncounter(state.location));
+      addOption('Вернуться в деревню', () => goTo('village'));
+    }
+
+    app.innerHTML = `
+      <h1 class="title">Земли Тихого Лога</h1>
+      <hr class="divider">
+      <div class="location-title">${loc.title}</div>
+      <p class="location-desc">${loc.desc}</p>
+      ${log ? `<div class="log">${log}</div>` : ''}
+      ${statsBarHtml(state)}
+      <p class="inventory-list">Инвентарь: ${invText}</p>
+      <div class="options">${optionsHtml}</div>
+    `;
+
+    handlers.forEach((fn, idx) => {
+      app.querySelector(`[data-idx="${idx}"]`).addEventListener('click', fn);
+    });
+  }
+
+  function renderShop() {
+    const app = document.getElementById('app');
+    let optionsHtml = '';
+    let handlers = [];
+
+    function addOption(label, handler, extraClass) {
+      const idx = handlers.length;
+      handlers.push(handler);
+      optionsHtml += `<button class="choice ${extraClass || ''}" data-idx="${idx}">${label}</button>`;
+    }
+
+    addOption(`${ITEMS.potion.name} — ${ITEMS.potion.price} золота (лечит ${ITEMS.potion.heal} HP)`, () => buyItem('potion'));
+    addOption(`${ITEMS.sword.name} — ${ITEMS.sword.price} золота (+${ITEMS.sword.attackBonus} к атаке)`, () => buyItem('sword'));
+    addOption(`${ITEMS.shield.name} — ${ITEMS.shield.price} золота (+${ITEMS.shield.defenseBonus} к защите)`, () => buyItem('shield'));
+    addOption('Уйти из лавки', () => { screen = 'town'; setLog(''); render(); }, 'danger');
+
+    app.innerHTML = `
+      <h1 class="title">Земли Тихого Лога</h1>
+      <hr class="divider">
+      <div class="location-title">Лавка торговца</div>
+      <p class="location-desc">Твоё золото: ${state.gold}</p>
+      ${log ? `<div class="log">${log}</div>` : ''}
+      <div class="options">${optionsHtml}</div>
+    `;
+
+    handlers.forEach((fn, idx) => {
+      app.querySelector(`[data-idx="${idx}"]`).addEventListener('click', fn);
+    });
+  }
+
+  function renderBattle() {
+    const app = document.getElementById('app');
+    let optionsHtml = '';
+    let handlers = [];
+
+    function addOption(label, handler, extraClass) {
+      const idx = handlers.length;
+      handlers.push(handler);
+      optionsHtml += `<button class="choice ${extraClass || ''}" data-idx="${idx}">${label}</button>`;
+    }
+
+    addOption('Атаковать', playerAttack);
+    addOption('Использовать зелье лечения', usePotionInBattle);
+    addOption('Сбежать', tryFlee, 'danger');
+
+    app.innerHTML = `
+      <h1 class="title">Земли Тихого Лога</h1>
+      <hr class="divider">
+      <div class="location-title">Бой: ${monster.name}</div>
+      ${log ? `<div class="log">${log}</div>` : ''}
+      <div class="battle-box">
+        <div class="combatant">
+          <div class="name-row"><span>${monster.name}</span><span>${Math.max(0, monster.hp)}/${monster.maxHp} HP</span></div>
+          <div class="hp-bar-track"><div class="hp-bar-fill enemy" style="width:${Math.max(0, monster.hp / monster.maxHp * 100)}%"></div></div>
+        </div>
+        <div class="combatant">
+          <div class="name-row"><span>${state.name}</span><span>${Math.max(0, state.hp)}/${state.maxHp} HP</span></div>
+          <div class="hp-bar-track"><div class="hp-bar-fill" style="width:${Math.max(0, state.hp / state.maxHp * 100)}%"></div></div>
+        </div>
+      </div>
+      <div class="options">${optionsHtml}</div>
+    `;
+
+    handlers.forEach((fn, idx) => {
+      app.querySelector(`[data-idx="${idx}"]`).addEventListener('click', fn);
+    });
+  }
+
+  function renderGameOver() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="game-over-screen">
+        <h1 class="title">Земли Тихого Лога</h1>
+        <hr class="divider">
+        <h2>Ты пал в бою...</h2>
+        <p class="location-desc">${log}</p>
+        <p class="location-desc">Ты достиг ${state.level} уровня, собрав ${state.gold} золота.</p>
+        <br>
+        <button class="seal-btn" id="restartBtn">Начать заново</button>
+      </div>
+    `;
+    document.getElementById('restartBtn').addEventListener('click', restart);
+  }
+
+  function render() {
+    if (screen === 'name') renderNameScreen();
+    else if (screen === 'town') renderTown();
+    else if (screen === 'shop') renderShop();
+    else if (screen === 'battle') renderBattle();
+    else if (screen === 'gameover') renderGameOver();
+  }
+
+  render();
+})();
+</script>
+
+</body>
+</html>
